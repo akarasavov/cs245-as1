@@ -10,14 +10,15 @@ import java.util.List;
 /**
  * ColumnTable, which stores data in column-major format.
  * That is, data is laid out like
- *   col 1 | col 2 | ... | col m.
+ * col 1 | col 2 | ... | col m.
  */
 public class ColumnTable implements Table {
     int numCols;
     int numRows;
     ByteBuffer columns;
 
-    public ColumnTable() { }
+    public ColumnTable() {
+    }
 
     /**
      * Loads data into the table through passed-in data loader. Is not timed.
@@ -29,13 +30,13 @@ public class ColumnTable implements Table {
         this.numCols = loader.getNumCols();
         List<ByteBuffer> rows = loader.getRows();
         numRows = rows.size();
-        this.columns = ByteBuffer.allocate(ByteFormat.FIELD_LEN*numRows*numCols);
+        this.columns = ByteBuffer.allocate(ByteFormat.FIELD_LEN * numRows * numCols);
 
         for (int rowId = 0; rowId < numRows; rowId++) {
             ByteBuffer curRow = rows.get(rowId);
             for (int colId = 0; colId < numCols; colId++) {
                 int offset = ByteFormat.FIELD_LEN * ((colId * numRows) + rowId);
-                this.columns.putInt(offset, curRow.getInt(ByteFormat.FIELD_LEN*colId));
+                this.columns.putInt(offset, curRow.getInt(ByteFormat.FIELD_LEN * colId));
             }
         }
     }
@@ -60,50 +61,76 @@ public class ColumnTable implements Table {
 
     /**
      * Implements the query
-     *  SELECT SUM(col0) FROM table;
-     *
-     *  Returns the sum of all elements in the first column of the table.
+     * SELECT SUM(col0) FROM table;
+     * <p>
+     * Returns the sum of all elements in the first column of the table.
      */
     @Override
     public long columnSum() {
-        // TODO: Implement this!
-        return 0;
+        int result = 0;
+        for (int rowId = 0; rowId < numRows; rowId++) {
+            result += getIntField(rowId, 0);
+
+        }
+        return result;
     }
 
     /**
      * Implements the query
-     *  SELECT SUM(col0) FROM table WHERE col1 > threshold1 AND col2 < threshold2;
-     *
-     *  Returns the sum of all elements in the first column of the table,
-     *  subject to the passed-in predicates.
+     * SELECT SUM(col0) FROM table WHERE col1 > threshold1 AND col2 < threshold2;
+     * <p>
+     * Returns the sum of all elements in the first column of the table,
+     * subject to the passed-in predicates.
      */
     @Override
     public long predicatedColumnSum(int threshold1, int threshold2) {
-        // TODO: Implement this!
-        return 0;
+        long sum = 0;
+        for (int i = 0; i < numRows; i++) {
+            int val1 = getIntField(i, 1);
+            int val2 = getIntField(i, 2);
+            if (val1 > threshold1 && val2 < threshold2) {
+                sum += getIntField(i, 0);
+            }
+        }
+        return sum;
     }
 
     /**
      * Implements the query
-     *  SELECT SUM(col0) + SUM(col1) + ... + SUM(coln) FROM table WHERE col0 > threshold;
-     *
-     *  Returns the sum of all elements in the rows which pass the predicate.
+     * SELECT SUM(col0) + SUM(col1) + ... + SUM(coln) FROM table WHERE col0 > threshold;
+     * <p>
+     * Returns the sum of all elements in the rows which pass the predicate.
      */
     @Override
     public long predicatedAllColumnsSum(int threshold) {
-        // TODO: Implement this!
-        return 0;
+        long result = 0;
+        for (int i = 0; i < numRows; i++) {
+            final int col0 = getIntField(i, 0);
+            if (col0 > threshold) {
+                result += col0;
+                for (int j = 1; j < numCols; j++) {
+                    result += getIntField(i, j);
+                }
+            }
+        }
+        return result;
     }
 
     /**
      * Implements the query
-     *   UPDATE(col3 = col3 + col2) WHERE col0 < threshold;
-     *
-     *   Returns the number of rows updated.
+     * UPDATE(col3 = col3 + col2) WHERE col0 < threshold;
+     * <p>
+     * Returns the number of rows updated.
      */
     @Override
     public int predicatedUpdate(int threshold) {
-        // TODO: Implement this!
-        return 0;
+        int count = 0;
+        for (int i = 0; i < numRows; i++) {
+            final int col0 = getIntField(i, 0);
+            if (col0 < threshold) {
+                count++;
+            }
+        }
+        return count;
     }
 }
